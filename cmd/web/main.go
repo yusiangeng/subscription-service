@@ -72,6 +72,7 @@ func (app *Config) serve() {
 	}
 }
 
+// Connect to postgres. Returns a pool of connections.
 func initDB() *sql.DB {
 	conn := connectToDB()
 	if conn == nil {
@@ -104,6 +105,7 @@ func connectToDB() *sql.DB {
 	}
 }
 
+// opens a connection to postgres using DSN env var
 func openDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -132,6 +134,7 @@ func initSession() *scs.SessionManager {
 	return session
 }
 
+// returns a pool of connections to redis using env var
 func initRedis() *redis.Pool {
 	redisPool := &redis.Pool{
 		MaxIdle: 10,
@@ -154,8 +157,7 @@ func (app *Config) listenForShutdown() {
 
 // block until waitgroup is empty and perform cleanup tasks
 func (app *Config) shutdown() {
-	app.InfoLog.Println("running cleanup tasks...")
-
+	app.InfoLog.Println("waiting for background tasks to finish running...")
 	app.Wait.Wait()
 
 	app.Mailer.DoneChan <- true

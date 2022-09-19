@@ -57,6 +57,7 @@ func (app *Config) render(w http.ResponseWriter, r *http.Request, t string, td *
 	}
 }
 
+// adds data from session into td
 func (app *Config) AddDefaultData(td *TemplateData, r *http.Request) *TemplateData {
 	// remove data from session as soon as it is read (only displayed once)
 	td.Flash = app.Session.PopString(r.Context(), "flash")
