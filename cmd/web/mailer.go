@@ -37,7 +37,7 @@ type Message struct {
 	Template    string
 }
 
-// goroutine to listen for messages on the MailerChan
+// goroutine to listen for messages on the MailerChan and send them
 func (app *Config) listenForMail() {
 	for {
 		select {
