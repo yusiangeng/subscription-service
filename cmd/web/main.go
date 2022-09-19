@@ -152,14 +152,18 @@ func (app *Config) listenForShutdown() {
 	os.Exit(0)
 }
 
-// block until waitgroup is empty
+// block until waitgroup is empty and perform cleanup tasks
 func (app *Config) shutdown() {
-	// perform cleanup tasks
-	app.InfoLog.Println("would run cleanup tasks...")
+	app.InfoLog.Println("running cleanup tasks...")
 
 	app.Wait.Wait()
 
+	app.Mailer.DoneChan <- true
+
 	app.InfoLog.Println("closing channels and shutting down application...")
+	close(app.Mailer.MailerChan)
+	close(app.Mailer.ErrorChan)
+	close(app.Mailer.DoneChan)
 }
 
 func (app *Config) createMail() Mail {
