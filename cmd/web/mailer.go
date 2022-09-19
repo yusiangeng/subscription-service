@@ -37,9 +37,23 @@ type Message struct {
 	Template    string
 }
 
-// listen for messages on the MailerChan
+// goroutine to listen for messages on the MailerChan
+func (app *Config) listenForMail() {
+	for {
+		select {
+		case msg := <-app.Mailer.MailerChan:
+			go app.Mailer.sendMail(msg, app.Mailer.ErrorChan)
+		case err := <-app.Mailer.ErrorChan:
+			app.ErrorLog.Println(err)
+		case <-app.Mailer.DoneChan:
+			return
+		}
+	}
+}
 
 func (m *Mail) sendMail(msg Message, errorChan chan error) {
+	defer m.Wait.Done()
+
 	if msg.Template == "" {
 		msg.Template = "mail"
 	}
@@ -61,14 +75,12 @@ func (m *Mail) sendMail(msg Message, errorChan chan error) {
 	// build html mail
 	formattedMessage, err := m.buildHtmlMessage(msg)
 	if err != nil {
-		fmt.Println("64")
 		errorChan <- err
 	}
 
 	// build plain text mail
 	plainMessage, err := m.buildPlainTextMessage(msg)
 	if err != nil {
-		fmt.Println("71")
 		errorChan <- err
 	}
 
@@ -84,7 +96,6 @@ func (m *Mail) sendMail(msg Message, errorChan chan error) {
 
 	smtpClient, err := server.Connect()
 	if err != nil {
-		fmt.Println("87")
 		errorChan <- err
 	}
 
@@ -102,7 +113,6 @@ func (m *Mail) sendMail(msg Message, errorChan chan error) {
 
 	err = email.Send(smtpClient)
 	if err != nil {
-		fmt.Println("103", err)
 		errorChan <- err
 	}
 }

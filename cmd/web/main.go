@@ -50,6 +50,8 @@ func main() {
 	}
 
 	// email
+	app.Mailer = app.createMail()
+	go app.listenForMail()
 
 	// listen for signals
 	go app.listenForShutdown()
@@ -141,6 +143,7 @@ func initRedis() *redis.Pool {
 	return redisPool
 }
 
+// goroutine to listen for syscall.SIGINT or syscall.SIGTERM and perfom graceful shutdown
 func (app *Config) listenForShutdown() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -149,13 +152,33 @@ func (app *Config) listenForShutdown() {
 	os.Exit(0)
 }
 
-// graceful shutdown
+// block until waitgroup is empty
 func (app *Config) shutdown() {
 	// perform cleanup tasks
 	app.InfoLog.Println("would run cleanup tasks...")
 
-	// block until waitgroup is empty
 	app.Wait.Wait()
 
 	app.InfoLog.Println("closing channels and shutting down application...")
+}
+
+func (app *Config) createMail() Mail {
+	errorChan := make(chan error)
+	mailerChan := make(chan Message, 100)
+	mailerDoneChan := make(chan bool)
+
+	m := Mail{
+		Domain:      "localhost",
+		Host:        "localhost",
+		Port:        1025,
+		Encryption:  "none",
+		FromName:    "Info",
+		FromAddress: "info@mycompany.com",
+		Wait:        app.Wait,
+		ErrorChan:   errorChan,
+		MailerChan:  mailerChan,
+		DoneChan:    mailerDoneChan,
+	}
+
+	return m
 }
